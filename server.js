@@ -1,230 +1,88 @@
 try
 { 
+    //define module 
     var express     =   require('express');
     var session     =   require('express-session');
     var bodyParser  =   require('body-parser');
     var app         =   express();
-    var router      =   express.Router();
+    var cookieParser= require('cookie-parser');
     var favicon=require('serve-favicon');
-    var models= require('./app/models/mongo.js');
-    var sess;
+    var passport=require('passport');
+    var flash=require('connect-flash');
+    var dirRoot=__dirname;
+  
+      //connect to mongo database
+    var mongoose=require('mongoose');
+    var connectionString= require(dirRoot +'/app/configs/dbconfig.js');
+    var initpassport=require(dirRoot +'/app/authentications/passport.js');
+    initpassport(passport);
+    mongoose.connect(connectionString.url,function(err){
+            if(err){
+                console.log('Connecting failed')    
+            }
+            else{
+                console.log('Connecting success')
+            }
+    });
+
+    //setting app
     app.use(bodyParser.json());
     app.use(bodyParser.urlencoded({'extended' : false}));
     app.engine('html', require('ejs').renderFile);
-    app.set('views', __dirname + '/app/public');
-    console.log(__dirname);
-    app.use(express.static(__dirname+'/app/public'));
-    app.use(favicon(__dirname + '/app/public/images/favicon.ico'));
-    app.use(session({secret: 'ssshhhhh',saveUninitialized: true,resave: true}));
-
-    router.get('/',function(req,res){
-        sess=req.session;
-        console.log('config ssss'+sess.email);
-        if(sess.email)
-        {
-            res.redirect('/users');
-        }
-        else
-        {
-            res.render('index.html');
-        }
-    });
-    
-    router.get('/users',function(req,res){
-        sess=req.session;
-        if(sess.email) 
-        { 
-            console.log('session send')
-            res.render('index.html');
-        }
-        else
-        {
-            res.redirect('/');  
-            console.log('session send')
-        }
-    });
+    app.set('views', dirRoot + '/app/views');
+    app.use(express.static(dirRoot +'/app/views'));
+    app.use(favicon(dirRoot + '/app/views/images/favicon.ico'));
+    app.use(cookieParser());
+    app.use(session({secret: 'anystringoftext',
+                     saveUninitialized: true,
+                     resave: true,
+                     }));
    
-    router.get('/logout',function(req,res){
-         req.session.destroy(function(err){
-                if(err){
-                    console.log(err);
-                }
-                else
-                {
-                   console.log('end session'); 
-                    res.redirect('/');
-                    console.log("destroysssss");
-                }
-               
-            });
+    app.use(passport.initialize());
+    app.use(passport.session());
+    app.use(flash());
+    app.use(function(req, res, next) {
+              res.setHeader('Access-Control-Allow-Origin', '*');
+              res.setHeader('Access-Control-Allow-Headers', 'Content-Type,X-Requested-With');
+              res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,HEAD,DELETE,OPTIONS');
+              res.setHeader('Access-Control-Allow-Credentials', true);
+              if ('OPTIONS' == req.method) {
+                    res.send(200);
+              } else {               
+                  next();
+              }            
     });
 
-    router.route('/api/users/')
-        .get(function(req,res){
-            models.find({},function(err,data){
-            // Mongo command to fetch all data from collection.         
-                console.log(data);                 
-                res.json(data);
-            });
-         })
-        .post(function(req,res){
-            var db = new models();
-            var response = {};
-            // fetch email and password from REST request.
-            // Add strict validation when you use this in Production.
-            db.userEmail = req.body.userEmail; 
-            // Hash the password using SHA1 algorithm.
-            db.userPassword =  require('crypto')
-                              .createHash('sha1')
-                              .update(req.body.userPassword)
-                              .digest('base64');
-            db.save(function(err){
-            // save() will run insert() command of MongoDB.
-            // it will add new data in collection.
-                if(err) 
-                {
-                    response = {"error" : true,"message" : "Error adding data"};
-                } 
-                else
-                {
-                    response = {"error" : false,"message" : "Data added"};
-                }
-                res.json(response);
-            });
-         });
-    router.route('/api/users/email/:email')
-    		.get(function(req,res){
-    			var response={};
-    			models.find({'userEmail': req.params.email},function(err,data){
-    				if(err)
-    				{
-    					response={'error':true,'message':'Not fetching data'};
-    				}
-    				else
-    				{
-    					response={'error':false,'message':data};
-    					console.log(data);
-    				}				
-    				res.json(response);
-    			})
-    		})
-    router.route('/api/users/:id')            
-    		.get(function(req,res){
-                 models.findById(req.params.id,function(err,data){
-            // Mongo command to fetch all data from collection.         
-                console.log(data);                 
-                res.json(data);
-                });
-            })
-    		.put(function(req,res){
-    			var response={}
-                console.log(req.params.id);
-                console.log(req.body.userEmail);
-    			models.findById(req.params.id,function(err,data){
-    				if(err)
-    				{
-    					response = {"error" : true,"message" : "Error fetching data"};
-    				}
-    				else
-    				{
-    					 if(req.body.userEmail !== undefined) 
-    					 {
-                        // case where email needs to be updated.
-                        	data.userEmail = req.body.userEmail;
-                    	 }
-                   		 if(req.body.userPassword !== undefined) 
-                   		 {
-                        // case where password needs to be updated
-                       		data.userPassword = require('crypto')
-                                                .createHash('sha1')
-                                                .update(req.body.userPassword)
-                                                .digest('base64');
-                    	 }
-                    	 data.save(function(err)
-                    	 {	
-                    	 	 if(err) 
-                			 {
-                   				 response = {"error" : true,"message" : "Error adding data"};
-               				 } 
-               				 else
-                			 {
-                   				 response = {"error" : false,"message" : "Data edit"};
-                			 }  
-                             res.json(response)     			 
-                    	 })
-    				}             
-    				
-    			})
-    		})
-            .delete(function(req,res){
-                var response={};
-                models.findById(req.params.id,function(err,data){
-                    if(err)
-                    {
-                        response={'error':true,'message':'Error fetching data'};
-                    }
-                    else
-                    {
-                        models.remove({'_id': req.params.id},function(error){
-                            if(err)
-                            {
-                                response={'error':true,'message':"Error delete data"};
-                            }
-                            else
-                            {
-                                  response = {"error" : true,"message" : "Data associated with "+req.params.id+"is deleted"};
-                            }
-                            res.json(response);
-                        })
-                    }
-                })
-            });
-    router.route('/api/login')
-        .post(function(req,res){
+    var isLoggedIn=function isLoggedIn(req, res, next) {
+                 if(req.isAuthenticated()===true){
+                         return next();
+                 }    
+                 console.log(req.isAuthenticated());     
+                 res.redirect('/auth/login');
+           
+    }
 
-                var user= req.body.userEmail;
-                var pass=require('crypto')
-                              .createHash('sha1')
-                              .update(req.body.userPassword)
-                              .digest('base64');
-                var response={};
-                console.log(req.body.userEmail);
-                console.log(req.body.userPassword);
-                models.findOne({ $and:[
-                        {'userEmail':user},
-                        {'userPassword':pass}
-                        ]
-                },function(err,data){
-                    if(err)
-                    {
-                       response={'error':true,'message':'login failed'}; 
-                    }
-                    else
-                    {            
-                       if(data!=null)
-                       {      
-                         sess=req.session;   
-                         sess.email=req.body.userEmail;                             
-                         response={'error':false,'message':'login success'}; 
-                       }  
-                       else{
-                         response={'error':true,'message':'login failed'}; 
-                       }   
-                    }
-                    console.log(response);
-                    res.json(response);
-                });
-         });      
-    app.use('/',router);    
+     var api= express.Router();
+     require(dirRoot + '/app/api/userApi.js')(api,passport);
+     app.use('/api',api);
+
+     //using authen controller
+    var auth=express.Router();
+    require(dirRoot + '/app/controllers/authenController.js')(auth,passport);
+    app.use('/auth',auth);
+ 
+    //using basic controller
+    var basic=express.Router();
+    require(dirRoot + '/app/controllers/basicController.js')(basic,passport,isLoggedIn);
+    app.use('/',basic);
+     
+    // creater nodejs server
     app.set('port', process.env.PORT || 3000);
-
     var server= app.listen(app.get('port'), function() 
     {
          console.log('Express server listening on port ' + server.address().port);
     });
-    console.log('Listening to PORT 3000');
 }
 catch(er){
-    console.log('catch');
    console.log(er); 
 }

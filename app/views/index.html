@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="" ng-app="app">
+	<head>	 
+		<meta charset="utf-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<title>NodeJs Example</title>
+		<link rel="stylesheet" href="/css/bootstrap.css">
+		<link rel="stylesheet" type="text/css" href="/css/signin.css">
+		<link rel="stylesheet" href="/css/tether.min.css">
+		<script src="/js/tether.min.js"></script>		
+		<script src="/js/angular.js"></script>	
+		<script src="/js/angular-ui-router.js"></script>	
+		<script src="/js/angular-resource.js"></script>
+		<script src="/js/angular/app.js"></script>
+		<script src="/js/angular/service.js"></script>
+		<script src="/js/angular/controller.js"></script>
+		<script src="/js/angular-route.js"></script>	
+	</head>
+	<body>							 
+		 <nav class="navbar navbar-light bg-faded">
+		 			<a class="navbar-brand" href="/">Home</a>
+		 			<ul class="nav navbar-nav">	 				
+		 				<li class="nav-item">
+		 					<a class="nav-link" href="/auth/login">Login</a>
+		 				</li>	
+		 				<li class="nav-item">
+		 					<a class="nav-link" href="/auth/signup">Register</a>
+		 				</li>
+		 				<li class="nav-item">
+		 					<a ng-controller="facebookController" ng-click="urlFacebook()" class="btn btn-primary">
+		 						<i class="fa fa-facebook"></i> Facebook
+		 					</a>
+		 				</li>
+		 				<li class="nav-item">
+		 					<a ng-controller="googleController" ng-click="urlGoogle()" class="btn btn-danger">
+		 						<i class="fa fa-google-plu"></i> Google
+		 					</a>
+		 				</li>	 	 	 	 					 						
+		 			</ul>		
+		 </nav>	
+		 <div class="jumbotron">
+		 		<h1 class="display-3">Hello, world!</h1>		 			
+		 </div>
+		 <div ng-view></div>
+	<!-- jQuery -->
+		<script src="/js/tether.min.js"></script>		
+		<script src="/js/angular.js"></script>	
+		<script src="/js/angular-ui-router.js"></script>	
+		<script src="/js/angular-route.js"></script>	
+		<script src="/js/angular-resource.js"></script>
+		<script src="/js/angular/app.js"></script>
+		<script src="/js/angular/service.js"></script>
+		<script src="/js/angular/controller.js"></script>
+	</body>
+</html>
